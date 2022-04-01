@@ -1,0 +1,3 @@
+/cygdrive/c/Users/NitzanKarby/CLionProjects/ex2_yoav_dan/cmake-build-debug/CMakeFiles/edit_cache.dir
+/cygdrive/c/Users/NitzanKarby/CLionProjects/ex2_yoav_dan/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/cygdrive/c/Users/NitzanKarby/CLionProjects/ex2_yoav_dan/cmake-build-debug/CMakeFiles/ex2_yoav_dan.dir
