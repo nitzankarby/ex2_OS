@@ -3,6 +3,12 @@
  * Hebrew University OS course.
  * Author: OS, os@cs.huji.ac.il
  */
+#include <stdio.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <stdbool.h>
 
 #ifndef _UTHREADS_H
 #define _UTHREADS_H
@@ -10,7 +16,6 @@
 
 #define MAX_THREAD_NUM 100 /* maximal number of threads */
 #define STACK_SIZE 4096 /* stack size per thread (in bytes) */
-
 typedef void (*thread_entry_point)(void);
 
 /* External interface */

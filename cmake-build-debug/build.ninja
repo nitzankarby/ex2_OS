@@ -78,24 +78,6 @@ build CMakeFiles/ex2_yoav_dan.dir/uthreads.cpp.o: CXX_COMPILER__ex2_yoav_dan_Deb
   OBJECT_DIR = CMakeFiles/ex2_yoav_dan.dir
   OBJECT_FILE_DIR = CMakeFiles/ex2_yoav_dan.dir
 
-build CMakeFiles/ex2_yoav_dan.dir/demo_itimer.c.o: C_COMPILER__ex2_yoav_dan_Debug /cygdrive/c/Users/NitzanKarby/CLionProjects/ex2_yoav_dan/demo_itimer.c || cmake_object_order_depends_target_ex2_yoav_dan
-  DEP_FILE = CMakeFiles/ex2_yoav_dan.dir/demo_itimer.c.o.d
-  FLAGS = -g
-  OBJECT_DIR = CMakeFiles/ex2_yoav_dan.dir
-  OBJECT_FILE_DIR = CMakeFiles/ex2_yoav_dan.dir
-
-build CMakeFiles/ex2_yoav_dan.dir/demo_jmp.c.o: C_COMPILER__ex2_yoav_dan_Debug /cygdrive/c/Users/NitzanKarby/CLionProjects/ex2_yoav_dan/demo_jmp.c || cmake_object_order_depends_target_ex2_yoav_dan
-  DEP_FILE = CMakeFiles/ex2_yoav_dan.dir/demo_jmp.c.o.d
-  FLAGS = -g
-  OBJECT_DIR = CMakeFiles/ex2_yoav_dan.dir
-  OBJECT_FILE_DIR = CMakeFiles/ex2_yoav_dan.dir
-
-build CMakeFiles/ex2_yoav_dan.dir/demo_singInt_handler.c.o: C_COMPILER__ex2_yoav_dan_Debug /cygdrive/c/Users/NitzanKarby/CLionProjects/ex2_yoav_dan/demo_singInt_handler.c || cmake_object_order_depends_target_ex2_yoav_dan
-  DEP_FILE = CMakeFiles/ex2_yoav_dan.dir/demo_singInt_handler.c.o.d
-  FLAGS = -g
-  OBJECT_DIR = CMakeFiles/ex2_yoav_dan.dir
-  OBJECT_FILE_DIR = CMakeFiles/ex2_yoav_dan.dir
-
 
 # =============================================================================
 # Link build statements for STATIC_LIBRARY target ex2_yoav_dan
@@ -104,7 +86,7 @@ build CMakeFiles/ex2_yoav_dan.dir/demo_singInt_handler.c.o: C_COMPILER__ex2_yoav
 #############################################
 # Link the static library libex2_yoav_dan.a
 
-build libex2_yoav_dan.a: CXX_STATIC_LIBRARY_LINKER__ex2_yoav_dan_Debug CMakeFiles/ex2_yoav_dan.dir/uthreads.cpp.o CMakeFiles/ex2_yoav_dan.dir/demo_itimer.c.o CMakeFiles/ex2_yoav_dan.dir/demo_jmp.c.o CMakeFiles/ex2_yoav_dan.dir/demo_singInt_handler.c.o
+build libex2_yoav_dan.a: CXX_STATIC_LIBRARY_LINKER__ex2_yoav_dan_Debug CMakeFiles/ex2_yoav_dan.dir/uthreads.cpp.o
   LANGUAGE_COMPILE_FLAGS = -g
   OBJECT_DIR = CMakeFiles/ex2_yoav_dan.dir
   POST_BUILD = :
