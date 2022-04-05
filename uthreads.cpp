@@ -1,6 +1,7 @@
 //
-// Created by NitzanKarby on 01/04/2022.
+// Created by NitzanKarby and YoavVaknin1 on 01/04/2022.
 //
+// TODO: - handle sleep\blocked colussion  - termination of threads  - run basic tests
 
 #include "uthreads.h"
 #include <stdio.h>
@@ -15,9 +16,9 @@
 #include <set>
 #include<map>
 #include <iostream>
-
+using namespace std;
 using std::vector;
-using std::queue;
+using std::deque;
 using std::set ;
 using std::map;
 // Consts for the program
@@ -25,6 +26,8 @@ using std::map;
 #define SUCCESS (0)
 #define JB_SP 4
 #define JB_PC 5
+typedef void (*thread_entry_point)(void);
+typedef unsigned long address_t;
 
 #define THREAD_ERROR "thread library error: "
 // data structures
@@ -32,7 +35,7 @@ struct itimerval timer;
 struct sigaction sa= {nullptr};
 sigjmp_buf env[MAX_THREAD_NUM];
 set<int> ids;
-queue<int> ready_queue;
+deque<int> ready_deque;
 map<int, int> sleeping_map;
 set<int> blocked_threads;
 map<int,int> quantum_counter;
@@ -44,24 +47,37 @@ int total_quantum;
 int current_running_thread;
 
 // func declarations
+void increment_quantum_counter(int id);
 int get_thread_id();
 void sleep_list_handling();
 address_t translate_address(address_t addr);
-int add_to_ready_queue(int id);
+int add_to_ready_deque(int id);
 
 void time_handler(int signal){
   fprintf(stderr, "in time handler \n", total_quantum);
-
   // Running thread to wait list
-  ready_queue.push(current_running_thread);
-  // Sleep list handling
-  sleep_list_handling();
-  // Wait list to running
-  current_running_thread = ready_queue.front();
-  ready_queue.pop();
-  quantum_counter[current_running_thread]= quantum_counter[current_running_thread]+1;
-  ++total_quantum;
-  fprintf(stderr, "here at the handler, total quantum: %d\n", total_quantum);
+  change_threads();
+}
+
+void restart_clock(){
+    setitimer(ITIMER_VIRTUAL, &timer, nullptr);
+}
+
+
+void change_threads(){ // save current thread state -> choose the next thread to enter -> restart timer -> jump to next thread
+    add_to_ready_deque(current_running_thread);
+    // Sleep list handling
+    sleep_list_handling();
+    // Wait list to running
+    total_quantum++;
+    increment_quantum_counter(current_running_thread);
+    int ret_val = sigsetjmp(env[current_running_thread], 1); //saves the current state of the thread
+    current_running_thread = ready_deque.front();
+    ready_deque.pop_front();
+    // Actual jump
+    // TODO: Understand how the code that ran before keep on going
+    siglongjmp(env[current_running_thread], 1);  // Nice !
+    restart_clock(); //restart the clock whenever a thread starts 
 }
 
 int return_error_msg(int type, char* str){
@@ -74,6 +90,7 @@ int initialize_main_thread(){
     int id = get_thread_id();
     if (id == MAX_THREAD_NUM) return return_error_msg(1, (char*)"maximum number of threads exceeded \n");
     current_running_thread = id;
+    quantum_counter[current_running_thread] = 1;
     sigsetjmp(env[0], 1);
     return SUCCESS;
 }
@@ -84,8 +101,6 @@ int initialize_timer(){
     if (sigaction(SIGVTALRM, &sa, nullptr) < 0) return return_error_msg(0, (char*)"signal handling error\n");
     int quantum_sec = quantum / 1000000;
     int quantum_usec = quantum % 1000000;
-    fprintf(stderr, "init timer quantum usecs : %d\n", quantum_usec);
-    fprintf(stderr, "init timer quantum secs : %d\n", quantum_sec);
     timer.it_value.tv_sec = quantum_sec;
     timer.it_value.tv_usec = quantum_usec;
     timer.it_interval.tv_sec = quantum_sec;
@@ -107,35 +122,77 @@ int uthread_init(int quantum_usecs) {
     initialize_ids_set();
     if (initialize_main_thread() == FAIL) return FAIL;
     if (initialize_timer() == FAIL) return FAIL;
-    for(;;){}
     return SUCCESS;
 }
 
 int uthread_spawn(thread_entry_point entry_point) {
+    if (!entry_point) return return_error_msg(1,(char *) "bad entry point\n");
     int id = get_thread_id();
-    if (id == MAX_THREAD_NUM) return return_error_msg(1, (char*) (char*)"maximum number of threads exceeded \n");
+    if (id == MAX_THREAD_NUM) return return_error_msg(1, (char*)"maximum number of threads exceeded \n");
     // initializing the thread//
     //creating the threads stack
-    char*  stack = new char[STACK_SIZE];
-    address_t sp = (address_t)( *stack + STACK_SIZE - sizeof(address_t)); // check if this is the syntax
+    char * stack;
+    try{
+        stack = new char[STACK_SIZE];
+    } catch (const bad_alloc& e){
+      return return_error_msg(0, (char *) "Memory allocation failed\n");
+    }
+    // initializing threads values
+    address_t sp = (address_t) stack + STACK_SIZE - sizeof(address_t); // check if this is the syntax
     address_t pc = (address_t) entry_point;
     sigsetjmp(env[id], 1);
     (env[id]->__jmpbuf)[JB_SP] = translate_address(sp);
-    (env[id]->__jmpbuf)[JB_PC] = translate_address(pc);
+    (env[id]  ->__jmpbuf)[JB_PC] = translate_address(pc);
     sigemptyset(&env[id]->__saved_mask);
-    add_to_ready_queue(id);
-    return 0;
+    add_to_ready_deque(id);
+    return SUCCESS;
+}
+
+int validate_thread_id(int tid){
+    if (tid < 0 || tid >= (MAX_THREAD_NUM) || ids.find(tid) == ids.end()){ // yoav wrote -> ids.find(tid) != ids.end()
+      return return_error_msg(1, (char *) "No such thread id"); // No such process
+    }
+    return SUCCESS;
 }
 
 int uthread_terminate(int tid) {
+    if (validate_thread_id(tid) == FAIL) return FAIL;
+    if (tid == 0){
+      // Need to terminate all processes
+    }
+
+
     return 0;
 }
 
+
 int uthread_block(int tid) {
+    if (validate_thread_id(tid) == FAIL) return FAIL;
+    if (tid == 0 ) return return_error_msg(1, (char*) "cant block main thraed");
+    if (tid == current_running_thread){
+        change_threads();
+    }
+    blocked_threads.insert(tid);
+    // removing blocked id from ready deqeue -> I know its ugly
+    int index = 0;
+    for (auto i = ready_deque.begin(); *i != tid; i++)
+    {
+        index ++;
+    }
+    ready_deque.erase(ready_deque.begin()+index);
     return 0;
 }
 
 int uthread_resume(int tid) {
+    if (ids.find(tid) != ids.end()){ // minnig the tid does not exist and therefor an error
+        return return_error_msg(1, (char*)"trying to unblock a non existing thread");
+    }
+    auto thread = blocked_threads.find(tid);
+    if (thread != blocked_threads.end())
+    {
+        blocked_threads.erase(thread);
+        ready_deque.push_back(tid);
+    }
     return 0;
 }
 
@@ -155,13 +212,6 @@ int uthread_get_quantums(int tid) {
     return quantum_counter[tid];
 }
 
-// TODO : this function should be covered by the uthread_spawn() so must be deleted
-//int initialize_thread(thread_entry_point entry_point) {
-//    int cur_id = get_thread_id();
-//    if (cur_id == MAX_THREAD_NUM) return return_error_msg(1, (char*)"maximum number of threads exceeded\n");
-//    char* stack = new char[STACK_SIZE];
-//    return SUCCESS;
-//}
 
 int get_thread_id() {
     if (ids.empty()) return MAX_THREAD_NUM;
@@ -177,9 +227,9 @@ void sleep_list_handling(){
   {
     --it->second;
     if (it->second <= 0){
-      deleted.push_back(it->first);
+      deleted.push_back(it->first);  
       if (blocked_threads.find(it->first) == blocked_threads.end()){
-        ready_queue.push(it->first);
+        ready_deque.push_back(it->first);
       }
     }
   }
@@ -188,9 +238,17 @@ void sleep_list_handling(){
       sleeping_map.erase(i);
     }
 }
+void increment_quantum_counter(int id ){
+  if (quantum_counter.find(id) != quantum_counter.end()){
+      quantum_counter[id] = 0;
+    }
+  quantum_counter[id] += 1;
+}
 
-int add_to_ready_queue(int id){
-    ready_queue.push(id);
+
+int add_to_ready_deque(int id){
+    ready_deque.push_back(id);
+
 }
 
 address_t translate_address(address_t addr)
