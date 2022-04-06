@@ -1,7 +1,7 @@
 //
 // Created by NitzanKarby and YoavVaknin1 on 01/04/2022.
 //
-// TODO: - handle sleep\blocked colussion  - termination of threads  - run basic tests
+// TODO: - handle sleep\blocked is there a colussion?  - termination of threads  - run basic tests
 
 #include "uthreads.h"
 #include <stdio.h>
@@ -77,7 +77,7 @@ void change_threads(){ // save current thread state -> choose the next thread to
     // Actual jump
     // TODO: Understand how the code that ran before keep on going
     siglongjmp(env[current_running_thread], 1);  // Nice !
-    restart_clock(); //restart the clock whenever a thread starts 
+    restart_clock();
 }
 
 int return_error_msg(int type, char* str){
@@ -197,6 +197,9 @@ int uthread_resume(int tid) {
 }
 
 int uthread_sleep(int num_quantums) {
+    if (current_running_thread ==0) return return_error_msg(0, (char*) "cant put main thread to sleep");
+    sleeping_map[current_running_thread] = num_quantums; // inserting the value to a sleeping stage
+
     return 0;
 }
 
@@ -238,6 +241,7 @@ void sleep_list_handling(){
       sleeping_map.erase(i);
     }
 }
+
 void increment_quantum_counter(int id ){
   if (quantum_counter.find(id) != quantum_counter.end()){
       quantum_counter[id] = 0;
